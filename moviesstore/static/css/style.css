@@ -38,3 +38,13 @@
   width: fit-content;
   max-height: 400px;
 }
+html, body {
+  height: 100%;
+}
+body {
+  display: flex;
+  flex-direction: column;
+}
+main {
+  flex: 1;
+}
