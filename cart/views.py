@@ -8,36 +8,47 @@ from django.contrib.auth.decorators import login_required
 
 from .utils import calculate_cart_total
 def index(request):
-    cart_total = 0
-    movies_in_cart = []
-    cart = request.session.get('cart', {})
+    selected_cart = request.GET.get('cart', '1')
+    all_carts = request.session.get('carts', {'1': {}, '2': {}, '3': {}})
+    cart = all_carts.get(selected_cart, {})
     movie_ids = list(cart.keys())
-    if (movie_ids != []):
+    movies_in_cart = []
+    cart_total = 0
+    if movie_ids:
         movies_in_cart = Movie.objects.filter(id__in=movie_ids)
         cart_total = calculate_cart_total(cart, movies_in_cart)
     template_data = {}
     template_data['title'] = 'Cart'
     template_data['movies_in_cart'] = movies_in_cart
     template_data['cart_total'] = cart_total
+    template_data['selected_cart'] = selected_cart
     return render(request, 'cart/index.html', {'template_data': template_data})
 
 def add(request, id):
     get_object_or_404(Movie, id=id)
-    cart = request.session.get('cart', {})
+    selected_cart = request.POST.get('cart', '1')
+    all_carts = request.session.get('carts', {'1': {}, '2': {}, '3': {}})
+    cart = all_carts.get(selected_cart, {})
     cart[id] = request.POST['quantity']
-    request.session['cart'] = cart
-    return redirect('cart.index')
+    all_carts[selected_cart] = cart
+    request.session['carts'] = all_carts
+    return redirect(f'/cart/?cart={selected_cart}')
 
 def clear(request):
-    request.session['cart'] = {}
-    return redirect('cart.index')
+    selected_cart = request.GET.get('cart', '1')
+    all_carts = request.session.get('carts', {'1': {}, '2': {}, '3': {}})
+    all_carts[selected_cart] = {}
+    request.session['carts'] = all_carts
+    return redirect(f'/cart/?cart={selected_cart}')
 
 @login_required
 def purchase(request):
-    cart = request.session.get('cart', {})
+    selected_cart = request.GET.get('cart', '1')
+    all_carts = request.session.get('carts', {'1': {}, '2': {}, '3': {}})
+    cart = all_carts.get(selected_cart, {})
     movie_ids = list(cart.keys())
-    if (movie_ids == []):
-        return redirect('cart.index')
+    if not movie_ids:
+        return redirect(f'/cart/?cart={selected_cart}')
     movies_in_cart = Movie.objects.filter(id__in=movie_ids)
     cart_total = calculate_cart_total(cart, movies_in_cart)
     order = Order()
@@ -51,7 +62,8 @@ def purchase(request):
         item.order = order
         item.quantity = cart[str(movie.id)]
         item.save()
-    request.session['cart'] = {}
+    all_carts[selected_cart] = {}
+    request.session['carts'] = all_carts
     template_data = {}
     template_data['title'] = 'Purchase confirmation'
     template_data['order_id'] = order.id
