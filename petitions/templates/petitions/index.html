@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-3">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2>Movie Petitions</h2>
+          {% if user.is_authenticated %}
+          <a href="{% url 'petitions.create' %}" class="btn btn-primary">Create Petition</a>
+          {% endif %}
+        </div>
+        
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+        
+        {% if petitions %}
+          <div class="row">
+            {% for petition in petitions %}
+            <div class="col-md-6 col-lg-4 mb-4">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h5 class="card-title">{{ petition.title }}</h5>
+                  <p class="card-text">{{ petition.description|truncatewords:20 }}</p>
+                  <p class="text-muted small">
+                    By {{ petition.created_by.username }} on {{ petition.created_at|date:"M d, Y" }}
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-secondary">{{ petition.total_votes }} vote{{ petition.total_votes|pluralize }}</span>
+                    {% if user.is_authenticated %}
+                      {% if petition.user_has_voted %}
+                        <span class="text-success small">✓ Voted</span>
+                      {% else %}
+                        <a href="{% url 'petitions.vote' petition_id=petition.id %}" class="btn btn-sm btn-outline-primary">Vote</a>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="card-footer">
+                  <a href="{% url 'petitions.detail' petition_id=petition.id %}" class="btn btn-sm btn-outline-secondary">View Details</a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-5">
+            <h4>No petitions yet</h4>
+            <p class="text-muted">Be the first to create a movie petition!</p>
+            {% if user.is_authenticated %}
+              <a href="{% url 'petitions.create' %}" class="btn btn-primary">Create First Petition</a>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
